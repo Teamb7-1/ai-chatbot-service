@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+.vercel/
+*.db
+*.sqlite3
+data/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+logs/
+*.log
+.DS_Store
+.idea/
+.vscode/
