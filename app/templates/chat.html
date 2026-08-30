@@ -17,11 +17,11 @@
 {% block below %}
   <form class="composer" id="composer">
     <div class="composer-inner">
-      <textarea id="message" rows="1" maxlength="{{ max_length }}"
+      <textarea id="message" rows="1"
                 placeholder="예: 파이썬에서 IndexError는 왜 나요?"
                 aria-label="질문"></textarea>
       <button class="btn" type="submit" id="send">보내기</button>
-      <p class="counter" id="counter">0 / {{ "{:,}".format(max_length) }}</p>
+      <p class="counter" id="counter"></p>
     </div>
   </form>
   <script src="/static/chat.js" defer></script>
