@@ -13,6 +13,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+# 과제 명세는 "입력 검증 로직 최소 1개"만 요구하고 길이 숫자를 정하지 않는다(L90·L211).
+# 이 값은 팀이 고른 것이다 — 코딩 학습 챗봇이라 사용자가 에러와 코드를 통째로
+# 붙여넣는 것이 주 사용례이므로 파일 하나가 들어갈 크기로 잡았다.
+MESSAGE_MAX_LENGTH = 4000
+
 
 class ErrorCode(StrEnum):
     """오류 코드 8종 — 계획서 7장 표와 1:1 대응.
@@ -29,6 +34,56 @@ class ErrorCode(StrEnum):
     RATE_LIMITED = "RATE_LIMITED"                # 503
     AI_ERROR = "AI_ERROR"                        # 503
     AI_UNKNOWN = "AI_UNKNOWN"                    # 503
+
+    # 계획서 7장 표에는 없는 9번째 코드다. 위 8종은 "예상한 실패"를 다루는데,
+    # 우리 코드의 버그처럼 예상 못한 예외에는 붙일 코드가 없었다.
+    # AI_UNKNOWN(503)을 재사용하면 DB 오류를 AI 문제로 잘못 알리게 된다.
+    INTERNAL_ERROR = "INTERNAL_ERROR"            # 500
+
+
+# 코드별 HTTP 상태. 라우터가 상태코드를 직접 고르지 않고 여기를 따른다.
+ERROR_STATUS: dict[ErrorCode, int] = {
+    ErrorCode.VALIDATION_ERROR: 422,
+    ErrorCode.NOT_AUTHENTICATED: 401,
+    ErrorCode.INVALID_CREDENTIALS: 401,
+    ErrorCode.DUPLICATE_USERNAME: 409,
+    ErrorCode.AI_TIMEOUT: 503,
+    ErrorCode.RATE_LIMITED: 503,
+    ErrorCode.AI_ERROR: 503,
+    ErrorCode.AI_UNKNOWN: 503,
+    ErrorCode.INTERNAL_ERROR: 500,
+}
+
+# 사용자에게 보이는 확정 문구. B가 코드를 던지고 D가 화면에 그리므로
+# 문구가 흩어지면 화면에 엉뚱한 말이 뜬다. 여기가 유일한 출처다.
+ERROR_MESSAGES: dict[ErrorCode, str] = {
+    ErrorCode.VALIDATION_ERROR: (
+        f"입력값이 올바르지 않습니다. (빈 입력 또는 {MESSAGE_MAX_LENGTH:,}자 초과)"
+    ),
+    ErrorCode.NOT_AUTHENTICATED: "로그인이 필요합니다.",
+    ErrorCode.INVALID_CREDENTIALS: "아이디 또는 비밀번호가 올바르지 않습니다.",
+    ErrorCode.DUPLICATE_USERNAME: "이미 사용 중인 아이디입니다.",
+    ErrorCode.AI_TIMEOUT: "현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
+    ErrorCode.RATE_LIMITED: "요청이 많아 잠시 대기가 필요해요. 30초 후 다시 시도해 주세요.",
+    ErrorCode.AI_ERROR: "AI 응답 생성에 실패했어요. 잠시 후 다시 시도해 주세요.",
+    ErrorCode.AI_UNKNOWN: "알 수 없는 오류가 발생했어요. 잠시 후 다시 시도해 주세요.",
+    ErrorCode.INTERNAL_ERROR: "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.",
+}
+
+
+class AppError(Exception):
+    """서비스가 의도적으로 올리는 오류.
+
+    라우터·서비스는 상태코드와 문구를 직접 고르지 않고 이것만 올린다.
+    main.py 의 전역 핸들러가 ERROR_STATUS·ERROR_MESSAGES 를 보고 응답으로 바꾼다.
+
+        raise AppError(ErrorCode.DUPLICATE_USERNAME)
+    """
+
+    def __init__(self, code: ErrorCode, message: str | None = None):
+        self.code = code
+        self.message = message or ERROR_MESSAGES[code]
+        super().__init__(f"{code.value}: {self.message}")
 
 
 class ErrorResponse(BaseModel):
@@ -60,10 +115,6 @@ class UserResponse(BaseModel):
 
 # ─────────────────────────────  챗봇 (B가 사용)  ─────────────────────────────
 
-# 과제 명세는 "입력 검증 로직 최소 1개"만 요구하고 길이 숫자를 정하지 않는다(L90·L211).
-# 이 값은 팀이 고른 것이다 — 코딩 학습 챗봇이라 사용자가 에러와 코드를 통째로
-# 붙여넣는 것이 주 사용례이므로 파일 하나가 들어갈 크기로 잡았다.
-MESSAGE_MAX_LENGTH = 4000
 
 
 class ChatRequest(BaseModel):
