@@ -1,0 +1,42 @@
+name: close-issue
+
+# 작업 PR 이 develop 에 머지되면 대응하는 이슈를 닫는다.
+#
+# GitHub 의 closing keyword(Closes #N)는 PR 이 **기본 브랜치**에 머지될 때만 발동한다.
+# 우리 기본 브랜치는 main 이고 작업 PR 은 전부 develop 으로 가므로,
+# PR 본문에 Closes 가 있어도 릴리스 전까지는 이슈가 열린 채 쌓인다.
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  close:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: 브랜치 이름의 이슈 번호로 닫기
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          BRANCH: ${{ github.event.pull_request.head_ref }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # feature/{번호}-{설명} 에서 번호를 뽑는다.
+          # 릴리스 PR(head=develop)처럼 번호가 없으면 아무 일도 하지 않는다.
+          issue=$(printf '%s' "$BRANCH" | sed -nE 's|^[a-z]+/([0-9]+)-.*|\1|p')
+          if [ -z "$issue" ]; then
+            echo "브랜치 '$BRANCH' 에 이슈 번호가 없다 — 건너뛴다"
+            exit 0
+          fi
+
+          state=$(gh issue view "$issue" --repo "$REPO" --json state --jq .state 2>/dev/null || echo MISSING)
+          case "$state" in
+            OPEN)
+              gh issue close "$issue" --repo "$REPO" \
+                --comment "PR #$PR 이 develop 에 머지되어 닫는다."
+              echo "이슈 #$issue 를 닫았다" ;;
+            CLOSED)
+              echo "이슈 #$issue 는 이미 닫혀 있다" ;;
+            *)
+              echo "::notice::이슈 #$issue 를 찾지 못했다 — 건너뛴다" ;;
+          esac
