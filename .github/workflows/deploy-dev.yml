@@ -1,0 +1,74 @@
+name: deploy-dev
+
+# develop 에 병합되면 스테이징에 배포한다.
+# 프로덕션(main)과 달리 팀이 통합 상태를 눈으로 확인하기 위한 것이다.
+#
+#   프로덕션  https://b7-ai-chatbot.vercel.app       (main)
+#   스테이징  https://b7-ai-chatbot-dev.vercel.app   (develop)
+on:
+  push:
+    branches: [develop]
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+env:
+  STAGING_ALIAS: b7-ai-chatbot-dev.vercel.app
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vercel CLI 설치
+        run: npm i -g vercel@latest
+
+      - name: uv 설치
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.9.26"
+
+      - name: 환경 pull (preview)
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 빌드
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      # 프로덕션이 아니라 프리뷰 배포를 만든 뒤 고정 별칭을 붙인다.
+      # 프리뷰 URL 은 배포마다 바뀌므로 별칭이 없으면 팀이 주소를 계속 찾아야 한다.
+      - name: 배포
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} \
+                  | grep -oE 'https://[^ ]+\.vercel\.app' | tail -1)
+          if [ -z "$url" ]; then
+            echo "::error::배포 URL을 얻지 못했다"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "배포됨: $url"
+
+      - name: 고정 별칭 연결
+        run: |
+          vercel alias set "${{ steps.deploy.outputs.url }}" "$STAGING_ALIAS" \
+            --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 헬스체크
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://$STAGING_ALIAS/healthz")
+            echo "시도 $i — /healthz -> $code"
+            if [ "$code" = "200" ]; then
+              echo "### 스테이징 배포 완료" >> "$GITHUB_STEP_SUMMARY"
+              echo "https://$STAGING_ALIAS" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::스테이징 헬스체크가 200을 반환하지 않았다"
+          exit 1
