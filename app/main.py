@@ -14,6 +14,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.logging_config import (
+    configure_logging,
+    new_request_id,
+    reset_request_id,
+    set_request_id,
+)
 from app.schemas import ERROR_MESSAGES, ERROR_STATUS, AppError, ErrorCode
 
 # Vercel 함수의 작업 디렉터리는 이 파일이 있는 폴더가 아니라 프로젝트 루트(/var/task)다.
@@ -21,9 +27,33 @@ from app.schemas import ERROR_MESSAGES, ERROR_STATUS, AppError, ErrorCode
 # 실측 확인: cwd=/var/task, BASE_DIR=/var/task/app
 BASE_DIR = Path(__file__).resolve().parent
 
+# 서버리스는 요청마다 기동될 수 있어 시작 훅이 아니라 import 시점에 설정한다.
+configure_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="코딩 학습 Q&A 챗봇")
+
+
+@app.middleware("http")
+async def attach_request_id(request: Request, call_next):
+    """요청마다 id 를 발급해 그 요청이 남기는 모든 로그 줄에 붙인다.
+
+    B·C 는 이 값을 인자로 넘겨받지 않는다. logging_config.get_request_id() 로
+    언제든 읽을 수 있고, 로그에는 자동으로 붙는다.  → 평가항목 30
+    """
+    request_id = new_request_id()
+    token = set_request_id(request_id)
+    try:
+        # 정적 파일은 요청 수가 많고 추적 가치가 없어 남기지 않는다.
+        if not request.url.path.startswith("/static"):
+            logger.info(
+                "request_received method=%s path=%s", request.method, request.url.path
+            )
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+    finally:
+        reset_request_id(token)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
