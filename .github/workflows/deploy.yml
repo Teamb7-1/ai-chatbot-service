@@ -35,7 +35,7 @@ jobs:
       # uv를 PATH에서 찾는다. 러너에는 기본 설치되어 있지 않다.
       # 설치 스크립트를 파이프로 실행하지 않고 공식 액션을 버전 고정해 쓴다.
       - name: uv 설치
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           version: "0.9.26"
 
