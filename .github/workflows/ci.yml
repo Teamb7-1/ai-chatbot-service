@@ -41,12 +41,8 @@ jobs:
           print("smoke OK — 앱이 기동하고 /healthz 가 200을 반환한다")
           PY
 
-      # 9/14부터 required 로 승격한다. 그전까지는 결과만 보고 머지를 막지 않는다.
+      # 원래 9/14에 required 로 승격할 계획이었으나 tests/ 가 생긴 시점에 앞당긴다.
+      # continue-on-error 로 두면 테스트가 통째로 깨져도 초록불이 떠서 머지된다
+      # (실제로 ModuleNotFoundError 를 그렇게 놓쳤다).
       - name: 테스트
-        continue-on-error: true
-        run: |
-          if [ -d tests ]; then
-            pytest -q
-          else
-            echo "tests/ 디렉터리가 아직 없다 — 9/14 이전이므로 정상"
-          fi
+        run: pytest -q
