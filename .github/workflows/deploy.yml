@@ -31,6 +31,16 @@ jobs:
       - name: Vercel CLI 설치
         run: npm i -g vercel@latest
 
+      # Vercel의 Python 빌더는 Vercel 밖에서 `vercel build`를 돌릴 때
+      # uv를 PATH에서 찾는다. 러너에는 기본 설치되어 있지 않다.
+      - name: uv 설치
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: uv 확인
+        run: uv --version
+
       - name: 환경 pull
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
