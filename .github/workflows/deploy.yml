@@ -33,10 +33,11 @@ jobs:
 
       # Vercel의 Python 빌더는 Vercel 밖에서 `vercel build`를 돌릴 때
       # uv를 PATH에서 찾는다. 러너에는 기본 설치되어 있지 않다.
+      # 설치 스크립트를 파이프로 실행하지 않고 공식 액션을 버전 고정해 쓴다.
       - name: uv 설치
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.9.26"
 
       - name: uv 확인
         run: uv --version
