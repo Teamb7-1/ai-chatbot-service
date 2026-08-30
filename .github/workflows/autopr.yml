@@ -1,0 +1,57 @@
+name: autopr
+
+# 작업 브랜치에 push 하면 develop 대상 PR을 자동으로 연다.
+# 이후 ci.yml → automerge.yml 이 이어받아 CI 통과 시 develop 으로 병합된다.
+#
+# 자동 PR을 원하지 않으면:
+#   - 브랜치 이름을 wip/... 등 아래 목록 밖으로 두거나
+#   - 커밋 메시지에 [wip] 를 넣는다
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+      - 'docs/**'
+      - 'chore/**'
+
+jobs:
+  open-pr:
+    # [wip] 이 붙은 커밋은 건너뛴다
+    if: "!contains(github.event.head_commit.message, '[wip]')"
+    runs-on: ubuntu-latest
+    steps:
+      # --fill 은 커밋에서 제목·본문을 뽑으므로 로컬 저장소가 필요하다.
+      # 체크아웃이 없으면 "fatal: not a git repository" 로 조용히 실패한다.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # GITHUB_TOKEN 으로 만든 PR은 pull_request 워크플로를 트리거하지 않는다.
+      # 그러면 ci.yml 이 돌지 않고 automerge.yml 도 걸리지 않아 아무 일도 안 일어난다.
+      # 그래서 여기도 PAT 를 쓴다.
+      - name: PR 열기 (없을 때만)
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          existing=$(gh pr list --head "$BRANCH" --base develop --state open \
+                       --repo "$REPO" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "PR #$existing 이 이미 열려 있다 — 새로 만들지 않는다"
+            exit 0
+          fi
+
+          # 실패를 뭉개지 않는다. develop 과 차이가 없는 경우만 정상 종료로 본다.
+          if out=$(gh pr create --repo "$REPO" --base develop --head "$BRANCH" --fill 2>&1); then
+            echo "$out"
+          else
+            echo "$out"
+            case "$out" in
+              *"No commits between"*)
+                echo "::notice::develop 과 차이가 없어 PR을 만들지 않았다" ;;
+              *)
+                echo "::error::PR 생성 실패"
+                exit 1 ;;
+            esac
+          fi

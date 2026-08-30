@@ -1,0 +1,46 @@
+name: release
+
+# develop 에 쌓인 것을 main 으로 올린다 = 프로덕션 배포.
+# Actions 탭에서 "Run workflow" 를 누르거나 `gh workflow run release.yml` 로 실행한다.
+#
+# 이 단계를 자동화하지 않는 이유: main 배포는 "지금 나가도 되나"를 팀이 판단하는
+# 유일한 지점이다. 계획서 11장의 통합(9/10~11)·안정화(9/14~15) 구간이 여기에 걸린다.
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 무엇이 나가는지 출력
+        run: |
+          echo "### main 에 새로 들어갈 커밋" >> "$GITHUB_STEP_SUMMARY"
+          git log --oneline origin/main..origin/develop >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: 릴리스 PR 생성 후 auto-merge 예약
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          num=$(gh pr list --repo "$REPO" --base main --head develop --state open \
+                  --json number --jq '.[0].number // empty')
+
+          if [ -z "$num" ]; then
+            body=$(git log --oneline origin/main..origin/develop)
+            if [ -z "$body" ]; then
+              echo "::notice::develop 이 main 과 같다 — 올릴 것이 없다"
+              exit 0
+            fi
+            gh pr create --repo "$REPO" --base main --head develop \
+              --title "release: $(date -u +%Y-%m-%d) develop → main" \
+              --body "$(printf '수동 트리거된 릴리스.\n\n## 포함된 커밋\n```\n%s\n```\n' "$body")"
+            num=$(gh pr list --repo "$REPO" --base main --head develop --state open \
+                    --json number --jq '.[0].number')
+          fi
+
+          echo "릴리스 PR #$num"
+          gh pr merge --auto --merge "$num" --repo "$REPO"
