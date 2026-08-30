@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}지난 대화 · 코딩 학습 Q&A{% endblock %}
+
+{% block nav %}
+  <a href="/chat">질문하기</a>
+  <a href="/logout">로그아웃</a>
+{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">지난 대화</h1>
+  <p class="page-note">최근 순서로 보입니다. 응답에 걸린 시간과 상태가 함께 기록됩니다.</p>
+
+  {% if not items %}
+    <p class="empty">아직 기록이 없습니다.</p>
+  {% else %}
+    <div class="log">
+      {% for it in items %}
+        <article class="entry">
+          <div class="entry-meta">
+            <b>{{ it.created_at.strftime("%m/%d %H:%M") }}</b>
+            {{ it.latency_ms }}ms
+          </div>
+          <div>
+            <p class="ask">{{ it.question }}</p>
+            <p class="answer{% if it.status == 'error' %} is-error{% endif %}">{{ it.answer }}</p>
+            {% if it.status == 'error' %}
+              <span class="badge is-error">{{ it.error_code }}</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

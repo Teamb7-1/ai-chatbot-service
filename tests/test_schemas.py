@@ -38,7 +38,22 @@ def test_회원가입_제약():
         RegisterRequest(username="abc", password="1234567")  # password 8자 미만
 
 
-def test_오류코드는_8종이며_문자열로_직렬화된다():
-    assert len(list(ErrorCode)) == 8
+def test_오류코드_집합이_계약대로다():
+    # 개수만 세면 코드를 바꿔치기해도 통과한다. 집합을 그대로 비교한다.
+    # 앞 8종은 계획서 7장 표, INTERNAL_ERROR 는 예상 못한 예외용으로 D가 추가했다.
+    assert {c.value for c in ErrorCode} == {
+        "VALIDATION_ERROR",
+        "NOT_AUTHENTICATED",
+        "INVALID_CREDENTIALS",
+        "DUPLICATE_USERNAME",
+        "AI_TIMEOUT",
+        "RATE_LIMITED",
+        "AI_ERROR",
+        "AI_UNKNOWN",
+        "INTERNAL_ERROR",
+    }
+
+
+def test_오류코드는_문자열로_직렬화된다():
     body = ErrorResponse(error_code=ErrorCode.AI_TIMEOUT, message="지연").model_dump()
     assert body["error_code"] == "AI_TIMEOUT"

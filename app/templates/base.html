@@ -4,15 +4,53 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}코딩 학습 Q&A 도우미{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
+  <script>
+    // 화면이 그려지기 전에 테마를 정한다. 안 하면 새로고침마다 흰 화면이 번쩍인다.
+    try {
+      var t = localStorage.getItem("theme");
+      if (t) document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/">코딩 학습 Q&amp;A 도우미</a>
-    {% block nav %}{% endblock %}
+    <a class="brand" href="/chat">코딩 학습 Q&amp;A</a>
+    <nav>
+      {% block nav %}{% endblock %}
+      <button type="button" id="theme-toggle" aria-label="테마 바꾸기"></button>
+    </nav>
   </header>
+
   <main>
     {% block content %}{% endblock %}
   </main>
+
+  {% block below %}{% endblock %}
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var btn = document.getElementById("theme-toggle");
+
+      function current() {
+        var set = root.getAttribute("data-theme");
+        if (set) return set;
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      function label() {
+        btn.textContent = current() === "dark" ? "밝게" : "어둡게";
+      }
+      label();
+      btn.addEventListener("click", function () {
+        var next = current() === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem("theme", next); } catch (e) {}
+        label();
+      });
+    })();
+  </script>
 </body>
 </html>
