@@ -53,7 +53,7 @@ def test_검증_실패는_VALIDATION_ERROR_로_나간다():
     res = client.post("/api/_t/validate", content="not json")
     assert res.status_code == 422
     assert res.json()["error_code"] == "VALIDATION_ERROR"
-    assert "4,000자" in res.json()["message"]
+    assert res.json()["message"] == ERROR_MESSAGES[ErrorCode.VALIDATION_ERROR]
 
 
 def test_AppError_는_코드의_상태와_문구를_따른다():
