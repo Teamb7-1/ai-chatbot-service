@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}질문하기 · 코딩 학습 Q&A{% endblock %}
+
+{% block nav %}
+  <a href="/logs">지난 대화</a>
+  <a href="/logout">로그아웃</a>
+{% endblock %}
+
+{% block content %}
+  <p class="notice" id="notice" role="alert"></p>
+
+  <div class="log" id="log">
+    <p class="empty" id="empty">막힌 곳을 물어보세요. 에러 메시지를 그대로 붙여넣어도 됩니다.</p>
+  </div>
+{% endblock %}
+
+{% block below %}
+  <form class="composer" id="composer">
+    <div class="composer-inner">
+      <textarea id="message" rows="1" maxlength="{{ max_length }}"
+                placeholder="예: 파이썬에서 IndexError는 왜 나요?"
+                aria-label="질문"></textarea>
+      <button class="btn" type="submit" id="send">보내기</button>
+      <p class="counter" id="counter">0 / {{ "{:,}".format(max_length) }}</p>
+    </div>
+  </form>
+  <script src="/static/chat.js" defer></script>
+{% endblock %}
