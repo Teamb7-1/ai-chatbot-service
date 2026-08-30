@@ -1,10 +1,13 @@
-# CLAUDE.md
+@AGENTS.md
 
-작업 규칙은 [`AGENTS.md`](AGENTS.md) 에 있다. **코드를 쓰기 전에 읽는다.**
+## Claude Code 사용자에게
 
-특히 다음 셋을 확인할 것:
-- **파일 소유자** — 남의 파일을 고치면 평가항목 31 이 깨진다
-- **작업 순서** — 이슈 먼저, 그다음 `feature/{번호}-{설명}` 브랜치, `git push` 로 끝
-- **하지 말 것** 목록
+위 import 로 `AGENTS.md` 가 세션 시작 시 자동으로 읽힌다.
+Cursor·Codex 등 다른 도구를 쓴다면 `AGENTS.md` 를 직접 읽히면 된다.
 
-사람용 규칙: [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md)
+작업 전 확인:
+- 고치려는 파일이 **내 담당인가** (AGENTS.md 2절). 아니면 이슈로 알린다
+- 이슈부터 만들고 `feature/{번호}-{설명}` 브랜치를 판다
+- PR 은 만들지 않는다. `git push` 하면 자동으로 생긴다
+
+사람용 규칙: `.github/CONTRIBUTING.md`
