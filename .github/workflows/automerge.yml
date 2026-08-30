@@ -1,0 +1,29 @@
+name: automerge
+
+# PR이 열리거나 갱신되면 auto-merge를 예약한다.
+# GitHub은 required check(ci)가 통과한 뒤 Merge commit으로 병합한다.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+jobs:
+  automerge:
+    # 초안(draft)이거나 hold 라벨이 붙어 있으면 예약하지 않는다.
+    # 논의가 필요한 PR은 draft로 열거나 hold를 달면 자동 머지를 피할 수 있다.
+    if: >-
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.labels.*.name, 'hold')
+    runs-on: ubuntu-latest
+    steps:
+      # 기본 GITHUB_TOKEN이 아니라 PAT를 쓰는 이유가 둘이다.
+      #  1) GITHUB_TOKEN이 만든 머지는 다른 워크플로를 다시 트리거하지 않는다
+      #     → auto-merge가 만든 main 커밋으로 deploy.yml이 돌아야 한다
+      #  2) 머지 커밋의 author가 PAT 소유자(= Vercel 계정 소유자)로 통일된다
+      #     → Vercel에 Git 연동을 걸더라도 git author 검사에 걸리지 않는다
+      #     PR 안의 개별 커밋은 원 작성자 그대로 남는다 (Merge commit이므로)
+      - name: auto-merge 예약
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: gh pr merge --auto --merge "$PR" --repo "$REPO"
