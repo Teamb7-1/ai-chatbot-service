@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff pytest httpx
+
+      - name: 린트
+        run: ruff check .
+
+      # 승인 게이트가 없으므로 이 스모크가 유일한 방어선이다.
+      # import 에러가 난 코드가 main에 자동 머지되어 배포까지 나가는 사고를 막는다.
+      - name: 스모크 — 앱 import + /healthz 200
+        run: |
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from app.main import app
+
+          res = TestClient(app).get("/healthz")
+          assert res.status_code == 200, f"status={res.status_code}"
+          assert res.json() == {"status": "ok"}, f"body={res.json()}"
+          print("smoke OK — 앱이 기동하고 /healthz 가 200을 반환한다")
+          PY
+
+      # 9/14부터 required 로 승격한다. 그전까지는 결과만 보고 머지를 막지 않는다.
+      - name: 테스트
+        continue-on-error: true
+        run: |
+          if [ -d tests ]; then
+            pytest -q
+          else
+            echo "tests/ 디렉터리가 아직 없다 — 9/14 이전이므로 정상"
+          fi

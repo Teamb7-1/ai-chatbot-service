@@ -14,3 +14,9 @@ logs/
 .DS_Store
 .idea/
 .vscode/
+
+# `vercel build` 가 requirements.txt 와 .python-version 에서 자동 생성하는 산출물.
+# 커밋하면 의존성 정의가 requirements.txt 와 두 갈래로 갈라진다.
+# 나중에 pyproject.toml 을 직접 쓰기로 하면 이 두 줄을 지울 것.
+pyproject.toml
+uv.lock
