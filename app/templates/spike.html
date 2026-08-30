@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jinja2 스파이크</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main>
+    <h1>Jinja2 스파이크</h1>
+    <p class="lead">
+      이 문장이 <b>스타일이 입혀진 채로</b> 보이면 Jinja2 렌더링과 StaticFiles 서빙이
+      Vercel에서 동시에 동작한다는 뜻이다. (D-11 완료 조건)
+    </p>
+    <table>
+      <tr><th>실행 환경</th><td>{{ "Vercel" if on_vercel else "로컬" }}</td></tr>
+      <tr><th>Python</th><td>{{ python }}</td></tr>
+      <tr><th>작업 디렉터리 (cwd)</th><td class="mono">{{ cwd }}</td></tr>
+      <tr><th>BASE_DIR</th><td class="mono">{{ base_dir }}</td></tr>
+      <tr><th>templates/ 해석</th><td>{{ "OK" if templates_ok else "실패" }}</td></tr>
+      <tr><th>static/ 해석</th><td>{{ "OK" if static_ok else "실패" }}</td></tr>
+    </table>
+    <p class="note">
+      cwd가 <span class="mono">/var/task</span> 계열이고 BASE_DIR이 그 하위 경로면,
+      상대경로를 썼을 때 깨진다는 계획서 2장의 경고가 실측으로 확인된 것이다.
+    </p>
+  </main>
+</body>
+</html>
