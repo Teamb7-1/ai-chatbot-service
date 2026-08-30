@@ -302,7 +302,6 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.counter.is-over { color: var(--error); }
 
 /* ── 버튼 ───────────────────────────────────────────────── */
 
