@@ -1,4 +1,4 @@
-name: 버그
+name: 버그 신고
 description: 동작하지 않는 것을 등록한다
 title: "[버그] "
 labels: ["bug"]
