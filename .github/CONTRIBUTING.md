@@ -2,10 +2,39 @@
 
 계획서 4장을 리포 안으로 옮긴 것이다. 판단이 갈리면 계획서가 기준이다.
 
+## 일상 작업은 push 한 번이 전부다
+
+```
+git push
+   │
+   ├─ autopr    develop 대상 PR을 자동으로 연다
+   ├─ ci        ruff · 스모크 · pytest
+   └─ automerge CI 통과 시 Merge commit 으로 develop 에 병합
+```
+
+**PR을 직접 만들 필요가 없다.** 작업 브랜치에 push 하면 나머지는 자동이다.
+
+자동 PR을 원하지 않을 때:
+- 커밋 메시지에 `[wip]` 를 넣는다
+- 또는 브랜치 이름을 `wip/...` 로 둔다 (`feature/` `fix/` `docs/` `chore/` 만 자동 대상)
+- 이미 PR이 열렸다면 **Draft 로 바꾸거나 `hold` 라벨**을 붙이면 자동 머지가 멈춘다
+
+## 프로덕션 배포는 버튼이다
+
+`develop` → `main` 은 자동이 아니다. **main 에 올리는 순간 Vercel 프로덕션이 갱신**되므로
+"지금 나가도 되나"를 판단하는 지점을 남겨뒀다.
+
+```bash
+gh workflow run release.yml
+```
+
+또는 GitHub **Actions 탭 → release → Run workflow**.
+무엇이 나가는지 실행 요약에 커밋 목록으로 표시된다.
+
 ## 브랜치
 
 ```
-feature/{이슈번호}-{설명}  ──PR──▶  develop  ──release PR──▶  main  ──▶  Vercel 배포
+feature/{이슈번호}-{설명}  ──자동 PR──▶  develop  ──release 버튼──▶  main  ──▶  Vercel 배포
 ```
 
 | 브랜치 | 용도 | 규칙 |
@@ -45,7 +74,8 @@ git config user.email "<GitHub 계정 이메일>"
 ## PR
 
 - **CI(`ci`)가 통과하면 자동으로 머지된다.** 리뷰 승인은 머지 조건이 아니다
-- 자동 머지를 피하려면 **Draft로 열거나 `hold` 라벨**을 붙인다
+- 자동 머지를 피하려면 **Draft로 바꾸거나 `hold` 라벨**을 붙인다
+- PR 본문은 커밋 메시지에서 자동으로 채워진다 → **커밋 메시지를 성의 있게 쓰면 PR이 저절로 좋아진다**
 - **Squash 금지** — 리포 설정에서 비활성화해 뒀다.
   Squash는 커밋을 1개로 압축하면서 author를 머지 주체로 바꾸기 때문에
   나머지 팀원의 커밋 수가 0이 된다
@@ -59,7 +89,7 @@ git config user.email "<GitHub 계정 이메일>"
 |---|---|---|
 | 린트 | `ruff check .` | ✅ |
 | 스모크 | 앱 import + `GET /healthz` 200 | ✅ |
-| 테스트 | `pytest` | ❌ → 9/14부터 차단 |
+| 테스트 | `pytest` | ✅ |
 
 로컬에서 미리 확인:
 
