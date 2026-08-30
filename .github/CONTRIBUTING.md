@@ -19,6 +19,16 @@ git push
 - 또는 브랜치 이름을 `wip/...` 로 둔다 (`feature/` `fix/` `docs/` `chore/` 만 자동 대상)
 - 이미 PR이 열렸다면 **Draft 로 바꾸거나 `hold` 라벨**을 붙이면 자동 머지가 멈춘다
 
+## 배포 주소 두 개
+
+| 환경 | URL | 언제 갱신되나 |
+|---|---|---|
+| **스테이징** | https://b7-ai-chatbot-dev.vercel.app | `develop` 에 병합될 때 **자동** |
+| **프로덕션** | https://b7-ai-chatbot.vercel.app | `release` 워크플로를 실행할 때 |
+
+push 하고 자동 머지가 끝나면 **스테이징에서 바로 확인**할 수 있다.
+평가자에게 제출하는 것은 프로덕션 URL 하나뿐이다.
+
 ## 프로덕션 배포는 버튼이다
 
 `develop` → `main` 은 자동이 아니다. **main 에 올리는 순간 Vercel 프로덕션이 갱신**되므로
