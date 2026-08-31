@@ -14,8 +14,6 @@
   var log = document.getElementById("log");
   var empty = document.getElementById("empty");
 
-  var MAX = parseInt(input.getAttribute("maxlength"), 10);
-
   // 서버가 error_code 를 주지 못한 경우에만 쓰는 최후 문구.
   // 정상 경로에서는 서버가 보낸 message 를 그대로 보여준다.
   var FALLBACK = "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.";
@@ -25,10 +23,10 @@
            String(d.getMinutes()).padStart(2, "0");
   }
 
+  // 길이 상한은 없다. 코드를 붙여넣을 때 크기를 가늠하라고 글자 수만 보여준다.
   function updateCounter() {
     var n = input.value.length;
-    counter.textContent = n.toLocaleString() + " / " + MAX.toLocaleString();
-    counter.classList.toggle("is-over", n >= MAX);
+    counter.textContent = n ? n.toLocaleString() + "자" : "";
   }
 
   function autoGrow() {
