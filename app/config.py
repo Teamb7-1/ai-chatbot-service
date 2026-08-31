@@ -6,3 +6,4 @@ AI_MODEL, AI_CONTEXT_TURNS는 환경마다 다를 필요가 없고 운영 중 �
 
 AI_MODEL = "gpt-4o-mini"
 AI_CONTEXT_TURNS = 5
+AI_BASE_URL = "https://copa.codyssey.kr/v1"

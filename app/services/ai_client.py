@@ -8,7 +8,7 @@ import os
 
 from openai import AsyncOpenAI
 
-from app.config import AI_MODEL
+from app.config import AI_BASE_URL, AI_MODEL
 
 _client: AsyncOpenAI | None = None
 
@@ -19,6 +19,7 @@ def _get_client() -> AsyncOpenAI:
     if _client is None:
         _client = AsyncOpenAI(
             api_key=os.environ["AI_API_KEY"],
+            base_url=AI_BASE_URL,
             timeout=float(os.environ.get("AI_TIMEOUT_SECONDS", "10")),
         )
     return _client
