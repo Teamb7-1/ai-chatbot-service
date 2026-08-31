@@ -11,7 +11,7 @@ import os
 import openai
 from openai import AsyncOpenAI
 
-from app.config import AI_BASE_URL, AI_MODEL
+from app.config import AI_BASE_URL, AI_MAX_OUTPUT_TOKENS, AI_MODEL, SYSTEM_PROMPT
 from app.schemas import AppError, ErrorCode
 
 logger = logging.getLogger(__name__)
@@ -33,18 +33,20 @@ def _get_client() -> AsyncOpenAI:
 
 
 async def generate(messages: list[dict]) -> str:
-    """messages를 받아 AI 응답 텍스트를 반환한다.
+    """messages(사용자/이전대화만)를 받아 AI 응답 텍스트를 반환한다.
 
     실패 시 SDK 예외를 그대로 올리지 않고 AppError(ErrorCode)로 옮긴다.
     타임아웃 1회는 재시도하고, 그래도 실패하면 포기한다.  → 평가항목 14, 28
     """
     client = _get_client()
+    full_messages = [{"role": "system", "content": SYSTEM_PROMPT}, *messages]
 
     for attempt in range(MAX_RETRIES + 1):
         try:
             response = await client.chat.completions.create(
                 model=AI_MODEL,
-                messages=messages,
+                messages=full_messages,
+                max_tokens=AI_MAX_OUTPUT_TOKENS,
             )
             return response.choices[0].message.content
 
