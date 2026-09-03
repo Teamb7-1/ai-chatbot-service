@@ -31,6 +31,18 @@ def index() -> RedirectResponse:
     return RedirectResponse("/chat", status_code=302)
 
 
+@router.get("/login")
+def login_page(request: Request):
+    """로그인 화면. 템플릿(#73, A)이 제출 대상 API 를 자기 안에서 정한다."""
+    return templates.TemplateResponse(request, "login.html")
+
+
+@router.get("/register")
+def register_page(request: Request):
+    """회원가입 화면."""
+    return templates.TemplateResponse(request, "register.html")
+
+
 @router.get("/chat")
 def chat_page(request: Request):
     """질문 화면.
