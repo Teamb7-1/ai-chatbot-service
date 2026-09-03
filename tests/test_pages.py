@@ -36,6 +36,23 @@ def test_채팅_화면이_뜬다(client):
     assert 'src="/static/chat.js"' in response.text
 
 
+def test_로그인_화면이_뜬다(client):
+    response = client.get("/login")
+
+    assert response.status_code == 200
+    assert 'id="login-form"' in response.text
+    # 폼이 가리키는 API 는 A 의 계약(#67)이다. 템플릿이 {% set %} 으로 정한다.
+    assert "/api/auth/login" in response.text
+
+
+def test_회원가입_화면이_뜬다(client):
+    response = client.get("/register")
+
+    assert response.status_code == 200
+    assert 'id="register-form"' in response.text
+    assert "/api/auth/register" in response.text
+
+
 def test_로그_화면이_뜬다(client):
     response = client.get("/logs")
 
@@ -67,6 +84,8 @@ def test_화면_라우트는_API_문서에_없다(client):
 
     assert "/chat" not in paths
     assert "/logs" not in paths
+    assert "/login" not in paths
+    assert "/register" not in paths
 
 
 def test_경로_상수가_절대경로다():
