@@ -79,11 +79,13 @@ cp .env.example .env        # 값을 채운다 (아래 5절)
 | 이름 | 설명 |
 |---|---|
 | `SECRET_KEY` | JWT 서명 키. `python -c "import secrets;print(secrets.token_hex(32))"` |
-| `DATABASE_URL` | 관리형 PostgreSQL의 **커넥션 풀러** 엔드포인트 |
-| `AI_MODEL` | 확정된 프로바이더의 모델명 |
-| `AI_API_KEY` | 확정된 프로바이더의 키 |
+| `DATABASE_URL` | Neon PostgreSQL 의 **pooled** 엔드포인트 (`postgresql+psycopg://…?sslmode=require`) |
+| `AI_API_KEY` | 코디세이 OpenAI 호환 엔드포인트 키 |
 | `AI_TIMEOUT_SECONDS` | AI 호출 타임아웃 (기본 10) |
-| `AI_CONTEXT_TURNS` | 프롬프트에 포함할 직전 Q/A 수 (기본 5) |
+
+환경변수에 두는 기준: **비밀이거나, 환경마다 달라야 하거나, 운영 중 값을 바꿔야 하는 것.**
+그 셋에 해당하지 않는 값(모델명·문맥 턴 수·엔드포인트 URL)은 `app/config.py` 상수다 —
+환경변수 하나는 스테이징에 빠뜨릴 수 있는 곳 하나다.
 
 배포 환경의 값은 **Vercel 대시보드 환경변수**에만 저장한다. Hobby 플랜이라 접근이
 계정 소유자로 제한되므로 변경이 필요하면 D에게 요청한다.
