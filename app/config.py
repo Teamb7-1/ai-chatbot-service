@@ -1,8 +1,27 @@
-"""AI 연동 관련 설정 상수.
+"""설정 상수 — 환경변수가 아닌 것들이 모이는 곳.
 
-AI_MODEL, AI_CONTEXT_TURNS는 환경마다 다를 필요가 없고 운영 중 바뀔 일도
-없어서 환경변수가 아니라 코드 상수로 둔다.
+여기 두는 기준: 비밀이 아니고, 환경마다 같아도 되고, 운영 중 바꿀 일이 없는 값.
+셋 중 하나라도 아니면 환경변수로 간다(.env.example).
+AI_MODEL, AI_CONTEXT_TURNS 가 그 기준으로 상수가 됐다.  → #44
+
+경로 상수도 여기 둔다. main.py 와 routers/pages.py 가 같은 계산을 두 번
+하고 있었는데, 한쪽만 고치면 배포에서만 깨지는 종류의 버그가 된다.
 """
+
+from pathlib import Path
+
+# ── 경로 ────────────────────────────────────────────────────────
+#
+# Vercel 함수의 작업 디렉터리는 이 파일이 있는 폴더가 아니라 프로젝트 루트(/var/task)다.
+# 상대경로로 쓰면 /var/task/templates 를 찾다 실패한다.
+# 실측 확인: cwd=/var/task, BASE_DIR=/var/task/app
+BASE_DIR = Path(__file__).resolve().parent
+
+TEMPLATES_DIR = BASE_DIR / "templates"
+STATIC_DIR = BASE_DIR / "static"
+
+
+# ── AI ──────────────────────────────────────────────────────────
 
 AI_MODEL = "gpt-5.4-mini"
 AI_CONTEXT_TURNS = 5
