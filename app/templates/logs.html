@@ -10,7 +10,14 @@
   <h1 class="page-title">지난 대화</h1>
   <p class="page-note">최근 순서로 보입니다. 응답에 걸린 시간과 상태가 함께 기록됩니다.</p>
 
-  {% if not items %}
+  {# 데이터 계층이 없는 것과 기록이 없는 것은 다르다. 같은 화면으로 뭉뚱그리면
+     C의 crud 가 안 붙은 상태를 아무도 눈치채지 못한다. #36 이 닫히면 이 분기는
+     통째로 사라진다. #}
+  {% if pending | default(false) %}
+    <p class="notice" role="status">
+      데이터 계층이 아직 연결되지 않았습니다 — 기록이 없는 것이 아니라 읽을 방법이 없습니다.
+    </p>
+  {% elif not items %}
     <p class="empty">아직 기록이 없습니다.</p>
   {% else %}
     <div class="log">
