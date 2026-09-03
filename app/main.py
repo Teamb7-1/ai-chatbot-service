@@ -5,27 +5,22 @@ FastAPI 앱 전체가 단일 서버리스 함수로 배포된다.
 """
 
 import logging
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.config import STATIC_DIR
 from app.logging_config import (
     configure_logging,
     new_request_id,
     reset_request_id,
     set_request_id,
 )
+from app.routers import pages
 from app.schemas import ERROR_MESSAGES, ERROR_STATUS, AppError, ErrorCode
-
-# Vercel 함수의 작업 디렉터리는 이 파일이 있는 폴더가 아니라 프로젝트 루트(/var/task)다.
-# 상대경로로 쓰면 /var/task/templates 를 찾다 실패한다.
-# 실측 확인: cwd=/var/task, BASE_DIR=/var/task/app
-BASE_DIR = Path(__file__).resolve().parent
 
 # 서버리스는 요청마다 기동될 수 있어 시작 훅이 아니라 import 시점에 설정한다.
 configure_logging()
@@ -55,8 +50,11 @@ async def attach_request_id(request: Request, call_next):
     finally:
         reset_request_id(token)
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# 화면 라우트는 전부 routers/pages.py 에 있다. 템플릿 인스턴스도 그쪽이 갖는다
+# — 여기 두면 렌더링하지 않는 파일이 렌더링 설정을 들고 있게 된다.
+app.include_router(pages.router)
 
 
 @app.get("/healthz")
