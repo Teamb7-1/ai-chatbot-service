@@ -56,7 +56,7 @@ python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 
 cp .env.example .env        # 값을 채운다 (아래 5절)
-./.venv/bin/uvicorn app.main:app --reload
+./.venv/bin/uvicorn app.main:app --reload --env-file .env
 ```
 
 | 확인 | URL |
