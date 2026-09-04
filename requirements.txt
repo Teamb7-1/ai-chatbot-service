@@ -4,3 +4,5 @@ uvicorn[standard]>=0.30
 openai>=1.40.0
 pyjwt>=2.8.0
 pwdlib[argon2]>=0.2.0
+SQLAlchemy>=2.0
+psycopg[binary]>=3.2
