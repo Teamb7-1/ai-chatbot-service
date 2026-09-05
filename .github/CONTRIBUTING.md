@@ -110,7 +110,7 @@ git config user.email "<GitHub 계정 이메일>"
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt ruff pytest httpx
 ./.venv/bin/ruff check .
-./.venv/bin/uvicorn app.main:app --reload   # http://localhost:8000/healthz
+./.venv/bin/uvicorn app.main:app --reload --env-file .env   # http://localhost:8000/healthz
 ```
 
 ## 비밀값
