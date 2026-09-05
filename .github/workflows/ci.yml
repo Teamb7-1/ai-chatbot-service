@@ -11,6 +11,11 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # database.py(#70)가 import 시점에 DATABASE_URL 을 요구한다. 스모크의 `import app.main` 이
+    # 그 파일에 닿는 순간 죽으므로 더미를 준다. create_engine 은 첫 connect 까지 연결하지 않는다.
+    # 비밀이 아니다 — 연결되지 않는 주소다.
+    env:
+      DATABASE_URL: postgresql+psycopg://ci:ci@localhost:5432/ci
     steps:
       - uses: actions/checkout@v4
 
