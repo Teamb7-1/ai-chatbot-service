@@ -72,6 +72,26 @@ cp .env.example .env        # 값을 채운다 (아래 5절)
 ./.venv/bin/pytest -q
 ```
 
+### 배포
+
+배포는 GitHub Actions 가 Vercel CLI 로 수행한다. 사람이 누르는 건 프로덕션 릴리스 하나뿐이다.
+
+| 환경 | 트리거 | 워크플로 | URL |
+|---|---|---|---|
+| 스테이징 | `develop` 에 머지되면 자동 | `deploy-dev.yml` | https://b7-ai-chatbot-dev.vercel.app |
+| 프로덕션 | `gh workflow run release.yml` | `release.yml` → `main` 머지 → `deploy.yml` | https://b7-ai-chatbot.vercel.app |
+
+`vercel.json` 이 `app/main.py` 를 단일 서버리스 함수(`maxDuration: 60`)로 지정한다.
+환경 변수는 Vercel 프로젝트에 둔다(5절) — `scripts/vercel-env-push.sh` 가 `.env.local` 을 읽어
+production·preview 양쪽에 등록하고, 스테이징은 `.env.preview` 로 다른 DB 를 본다.
+
+처음부터 재현하려면 GitHub 리포 시크릿 넷이 필요하다:
+
+| 시크릿 | 용도 |
+|---|---|
+| `VERCEL_TOKEN` `VERCEL_ORG_ID` `VERCEL_PROJECT_ID` | Actions 가 Vercel 에 배포 |
+| `GH_PAT` | 자동 PR·머지가 후속 워크플로를 깨우게 (기본 토큰은 못 깨운다) |
+
 ## 5. 환경 변수
 
 `.env.example` 을 복사해 사용한다. **실제 값은 리포에 커밋하지 않는다** — 공개 저장소다.
