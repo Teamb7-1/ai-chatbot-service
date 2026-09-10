@@ -50,6 +50,18 @@
         try { localStorage.setItem("theme", next); } catch (e) {}
         label();
       });
+
+      // 로그아웃 — 쿠키는 HttpOnly 라 서버만 지울 수 있다. POST 뒤에 /login 으로.
+      // 서버가 401 을 줘도(이미 만료) 목적지는 같다.
+      var logout = document.getElementById("logout");
+      if (logout) {
+        logout.addEventListener("click", function () {
+          logout.disabled = true;
+          fetch(logout.getAttribute("data-logout"), { method: "POST" })
+            .catch(function () {})
+            .finally(function () { window.location.href = "/login"; });
+        });
+      }
     })();
   </script>
 </body>
