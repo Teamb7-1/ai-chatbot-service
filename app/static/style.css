@@ -164,6 +164,13 @@ pre code {
 
 .topbar nav a[aria-current="page"] { color: var(--ink); }
 
+/* 로그인한 사용자 이름 — 링크·버튼과 같은 크기, 눌리지 않는 것만 다르다 */
+.topbar nav .who {
+  font-size: var(--fs-ask);
+  color: var(--muted);
+  padding: 0.25rem;
+}
+
 /* ── 페이지 ─────────────────────────────────────────────── */
 
 main {

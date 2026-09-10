@@ -19,7 +19,7 @@ from app.logging_config import (
     reset_request_id,
     set_request_id,
 )
-from app.routers import pages
+from app.routers import auth, pages
 from app.schemas import ERROR_MESSAGES, ERROR_STATUS, AppError, ErrorCode
 
 # 서버리스는 요청마다 기동될 수 있어 시작 훅이 아니라 import 시점에 설정한다.
@@ -55,6 +55,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # 화면 라우트는 전부 routers/pages.py 에 있다. 템플릿 인스턴스도 그쪽이 갖는다
 # — 여기 두면 렌더링하지 않는 파일이 렌더링 설정을 들고 있게 된다.
 app.include_router(pages.router)
+app.include_router(auth.router)  # /api/auth/* · /api/me  (A, #67)
 
 
 @app.get("/healthz")
