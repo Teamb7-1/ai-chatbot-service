@@ -27,14 +27,12 @@ os.environ.setdefault(
 
 
 @pytest.fixture
-def pg_db():
+def pg_connection():
     """명시한 테스트 DB의 고유 스키마에서만 실행하고 DDL/데이터를 롤백한다.
 
-    #66 사용자 테스트와 #36 대화 테스트가 공유한다. 앱의 DATABASE_URL은
+    #66/#36 테스트가 공유한다. 앱의 DATABASE_URL은
     사용하지 않는다. TEST_DATABASE_URL에는 운영 DB를 지정하지 않는다.
     """
-    from app.models import ChatLog, User
-
     database_url = os.environ.get("TEST_DATABASE_URL")
     if not database_url:
         pytest.skip("TEST_DATABASE_URL 미설정: 실제 PostgreSQL 검증은 실행하지 않음")
@@ -57,16 +55,24 @@ def pg_db():
                 connection = connection.execution_options(
                     schema_translate_map={None: schema}
                 )
-                User.__table__.create(connection)
-                ChatLog.__table__.create(connection)
-                with Session(
-                    bind=connection,
-                    autoflush=False,
-                    expire_on_commit=False,
-                    join_transaction_mode="create_savepoint",
-                ) as db:
-                    yield db
+                yield connection
             finally:
                 transaction.rollback()
     finally:
         engine.dispose()
+
+
+@pytest.fixture
+def pg_db(pg_connection):
+    """격리 스키마 안에서 ORM 테스트에 필요한 테이블과 Session을 준비한다."""
+    from app.models import ChatLog, User
+
+    User.__table__.create(pg_connection)
+    ChatLog.__table__.create(pg_connection)
+    with Session(
+        bind=pg_connection,
+        autoflush=False,
+        expire_on_commit=False,
+        join_transaction_mode="create_savepoint",
+    ) as db:
+        yield db
