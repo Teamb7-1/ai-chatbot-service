@@ -3,7 +3,7 @@
 
 {% block nav %}
   <a href="/logs">지난 대화</a>
-  <a href="/logout">로그아웃</a>
+  {% include "_user_nav.html" %}
 {% endblock %}
 
 {% block content %}
