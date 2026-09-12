@@ -10,58 +10,13 @@ SAVEPOINT에만 적용하고, 종료 시 스키마와 데이터를 외부 rollba
 기존 users 테이블이나 데이터는 변경하지 않는다.
 """
 
-import os
 from datetime import datetime
-from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
-from sqlalchemy.pool import NullPool
-from sqlalchemy.schema import CreateSchema
 
 from app import crud
 from app.models import User
-
-
-@pytest.fixture
-def pg_db():
-    database_url = os.environ.get("TEST_DATABASE_URL")
-    if not database_url:
-        pytest.skip("TEST_DATABASE_URL 미설정: 실제 PostgreSQL 검증은 실행하지 않음")
-    url = make_url(database_url)
-    if url.drivername != "postgresql+psycopg":
-        pytest.fail("TEST_DATABASE_URL은 postgresql+psycopg:// 형식이어야 함")
-
-    engine = create_engine(
-        url,
-        poolclass=NullPool,
-        hide_parameters=True,
-        connect_args={"connect_timeout": 5},
-    )
-    try:
-        with engine.connect() as connection:
-            transaction = connection.begin()
-            try:
-                schema = f"test_user_crud_{uuid4().hex}"
-                connection.execute(CreateSchema(schema))
-                connection = connection.execution_options(
-                    schema_translate_map={None: schema}
-                )
-                User.__table__.create(connection)
-                with Session(
-                    bind=connection,
-                    autoflush=False,
-                    expire_on_commit=False,
-                    join_transaction_mode="create_savepoint",
-                ) as db:
-                    yield db
-            finally:
-                transaction.rollback()
-    finally:
-        engine.dispose()
 
 
 def test_PostgreSQL에서_생성한_User를_두_키로_다시_조회한다(pg_db):

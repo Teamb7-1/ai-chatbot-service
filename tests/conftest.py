@@ -12,7 +12,67 @@ test_DATABASE_URL이_없으면_… 는 서브프로세스에서 environ.pop 하�
 """
 
 import os
+from uuid import uuid4
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
+from sqlalchemy.schema import CreateSchema
 
 os.environ.setdefault(
     "DATABASE_URL", "postgresql+psycopg://test:test@localhost:5432/test"
 )
+
+
+@pytest.fixture
+def pg_connection():
+    """명시한 테스트 DB의 고유 스키마에서만 실행하고 DDL/데이터를 롤백한다.
+
+    #66/#36 테스트가 공유한다. 앱의 DATABASE_URL은
+    사용하지 않는다. TEST_DATABASE_URL에는 운영 DB를 지정하지 않는다.
+    """
+    database_url = os.environ.get("TEST_DATABASE_URL")
+    if not database_url:
+        pytest.skip("TEST_DATABASE_URL 미설정: 실제 PostgreSQL 검증은 실행하지 않음")
+    url = make_url(database_url)
+    if url.drivername != "postgresql+psycopg":
+        pytest.fail("TEST_DATABASE_URL은 postgresql+psycopg:// 형식이어야 함")
+
+    engine = create_engine(
+        url,
+        poolclass=NullPool,
+        hide_parameters=True,
+        connect_args={"connect_timeout": 5},
+    )
+    try:
+        with engine.connect() as connection:
+            transaction = connection.begin()
+            try:
+                schema = f"test_crud_{uuid4().hex}"
+                connection.execute(CreateSchema(schema))
+                connection = connection.execution_options(
+                    schema_translate_map={None: schema}
+                )
+                yield connection
+            finally:
+                transaction.rollback()
+    finally:
+        engine.dispose()
+
+
+@pytest.fixture
+def pg_db(pg_connection):
+    """격리 스키마 안에서 ORM 테스트에 필요한 테이블과 Session을 준비한다."""
+    from app.models import ChatLog, User
+
+    User.__table__.create(pg_connection)
+    ChatLog.__table__.create(pg_connection)
+    with Session(
+        bind=pg_connection,
+        autoflush=False,
+        expire_on_commit=False,
+        join_transaction_mode="create_savepoint",
+    ) as db:
+        yield db
