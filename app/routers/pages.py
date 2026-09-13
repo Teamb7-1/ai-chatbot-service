@@ -4,17 +4,16 @@
 거기서 NOT_AUTHENTICATED 가 올라오고, main.py 의 핸들러가 화면 요청이면
 /login 으로 돌린다. 여기서 쿠키를 읽지 않는다.  → 평가항목 20
 
-로그 조회(#36 C)는 아직 없다. 그때까지 화면은 "없는 척"이 아니라 "아직 연결 안 됨"
-으로 보이게 한다. 빈 목록을 넘겨 "기록이 없습니다"라고 말하면 그건 거짓말이다
-— 기록이 없는 것과 읽을 방법이 없는 것은 다르다.
+DB 는 crud 한 곳을 통해서만 읽는다 (#36). 여기서 쿼리를 짜지 않는다.  → 평가항목 21
 """
 
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app import crud
 from app.config import TEMPLATES_DIR
-from app.deps import CurrentUser
+from app.deps import CurrentUser, DbSession
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
@@ -48,12 +47,9 @@ def chat_page(request: Request, user: CurrentUser):
 
 
 @router.get("/logs")
-def logs_page(request: Request, user: CurrentUser):
-    """지난 대화 화면.
-
-    #36 도착 후: items = crud.list_chat_logs(db, user.id) 한 줄로 바뀌고
-    pending 은 사라진다.
-    """
+def logs_page(request: Request, user: CurrentUser, db: DbSession):
+    """지난 대화 화면. 본인 기록만, 최신순."""
+    items = crud.list_chat_logs(db, user.id)
     return templates.TemplateResponse(
-        request, "logs.html", {"user": user, "items": [], "pending": True}
+        request, "logs.html", {"user": user, "items": items}
     )
