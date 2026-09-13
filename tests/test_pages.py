@@ -6,6 +6,7 @@
 """
 
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session
 from app import crud, deps
 from app.config import STATIC_DIR, TEMPLATES_DIR
 from app.main import app
-from app.models import User
+from app.models import ChatLog, User
 from app.security import create_access_token
 
 TEST_SECRET = "test-secret-key-with-more-than-thirty-two-bytes"
@@ -24,9 +25,28 @@ TEST_SECRET = "test-secret-key-with-more-than-thirty-two-bytes"
 
 @pytest.fixture(autouse=True)
 def no_database(monkeypatch):
-    """화면 테스트는 DB 에 닿지 않는다. 세션 팩토리를 가짜로 바꾼다."""
+    """화면 테스트는 DB 에 닿지 않는다. 세션 팩토리와 crud 조회를 가짜로 바꾼다."""
     monkeypatch.setenv("SECRET_KEY", TEST_SECRET)
     monkeypatch.setattr(deps, "SessionLocal", Mock(return_value=Mock(spec=Session)))
+    monkeypatch.setattr(crud, "list_chat_logs", Mock(return_value=[]))
+
+
+def _chat_log(**overrides) -> ChatLog:
+    values = {
+        "id": 1,
+        "user_id": 7,
+        "request_id": "req-1",
+        "question": "IndexError 는 왜 나요?",
+        "answer": "리스트 범위를 벗어난 인덱스를 읽어서요.",
+        "status": "success",
+        "error_code": None,
+        "provider": "openai",
+        "model": "test-model",
+        "latency_ms": 321,
+        "created_at": datetime(2026, 9, 13, 10, 30, tzinfo=UTC),
+    }
+    values.update(overrides)
+    return ChatLog(**values)
 
 
 @pytest.fixture
@@ -108,16 +128,43 @@ def test_로그_화면이_뜬다(logged_in):
     assert response.status_code == 200
 
 
-def test_데이터_계층_대기를_기록_없음으로_속이지_않는다(logged_in):
-    """crud.list_chat_logs(#36) 가 없는 상태와 기록이 0건인 상태는 다른 화면이어야 한다.
-
-    빈 배열을 넘겨 "아직 기록이 없습니다" 로 보이게 하면, C 의 데이터 계층이
-    안 붙은 것을 아무도 눈치채지 못한다. 초록불인데 작동하지 않는 상태다.
-    """
+def test_기록이_없으면_없다고_말한다(logged_in):
+    """#36 이후 "없음"은 진짜 없음이다. 대기 안내 문구는 사라졌다."""
     response = logged_in.get("/logs")
 
-    assert "데이터 계층이 아직 연결되지 않았습니다" in response.text
-    assert "아직 기록이 없습니다" not in response.text
+    assert "아직 기록이 없습니다" in response.text
+    assert "아직 연결되지 않았습니다" not in response.text
+
+
+def test_로그_화면은_본인_기록을_crud_한_곳에서_읽는다(logged_in, user):
+    """쿼리는 crud.list_chat_logs 가 한다. 화면은 user.id 를 넘기고 결과를 그릴 뿐이다."""
+    crud.list_chat_logs.return_value = [
+        _chat_log(id=2, question="두 번째 질문", answer="두 번째 답", latency_ms=45),
+        _chat_log(
+            id=1,
+            question="첫 질문",
+            answer="",
+            status="error",
+            error_code="AI_TIMEOUT",
+            latency_ms=30000,
+        ),
+    ]
+
+    response = logged_in.get("/logs")
+
+    crud.list_chat_logs.assert_called_once()
+    assert crud.list_chat_logs.call_args.args[1] == user.id
+    html = response.text
+    assert "두 번째 질문" in html and "두 번째 답" in html and "45ms" in html
+    assert "첫 질문" in html and "AI_TIMEOUT" in html
+    assert "아직 기록이 없습니다" not in html
+
+
+def test_비로그인_기록_API는_JSON_401(client):
+    response = client.get("/api/me/chats")
+
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "NOT_AUTHENTICATED"
 
 
 @pytest.mark.parametrize("path", ["/chat", "/logs"])
@@ -166,6 +213,7 @@ def test_API_문서에는_API만_있다(client):
 
     assert "/api/auth/login" in paths
     assert "/api/me" in paths
+    assert "/api/me/chats" in paths
     for page in ("/chat", "/logs", "/login", "/register"):
         assert page not in paths
 
