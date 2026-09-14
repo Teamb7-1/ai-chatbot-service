@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}회원가입 · 코딩 학습 Q&A{% endblock %}
+
+{% block content %}
+  <form class="card" id="register-form">
+    <h1 class="page-title">회원가입</h1>
+    <p class="notice" id="auth-notice" role="alert" aria-live="polite"></p>
+
+    <div class="field">
+      <label for="username">아이디</label>
+      <input id="username" name="username" required minlength="3" maxlength="20"
+             autocomplete="username" aria-describedby="username-hint">
+      <p class="field-hint" id="username-hint">3~20자</p>
+    </div>
+
+    <div class="field">
+      <label for="password">비밀번호</label>
+      <input id="password" name="password" type="password" required minlength="8"
+             autocomplete="new-password" aria-describedby="password-hint">
+      <p class="field-hint" id="password-hint">8자 이상</p>
+    </div>
+
+    <button class="btn" type="submit">계정 만들기</button>
+    <p class="card-foot">이미 계정이 있나요? <a href="/login">로그인</a></p>
+  </form>
+{% endblock %}
+
+{% block below %}
+  {% set form_id = "register-form" %}
+  {% set auth_endpoint = "/api/auth/register" %}
+  {% set auth_success_path = "/login" %}
+  {% include "_auth_submit.html" %}
+{% endblock %}

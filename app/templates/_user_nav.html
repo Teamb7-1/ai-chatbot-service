@@ -1,0 +1,5 @@
+{# 로그인한 화면의 공통 nav 꼬리 — 누구인지, 그리고 로그아웃.
+   로그아웃은 링크가 아니라 버튼이다. GET /logout 은 없고, 쿠키 삭제는
+   A 의 POST /api/auth/logout 만 한다. 눌렀을 때의 동작은 base.html 이 갖는다. #}
+<span class="who" aria-label="로그인한 사용자">{{ user.username }}</span>
+<button type="button" id="logout" data-logout="/api/auth/logout">로그아웃</button>

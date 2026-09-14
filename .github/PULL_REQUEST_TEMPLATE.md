@@ -10,7 +10,7 @@ Closes #
 ## 테스트 방법
 <!-- 리뷰어가 그대로 따라할 수 있게. 로컬 명령이나 확인할 URL -->
 ```bash
-./.venv/bin/uvicorn app.main:app --reload
+./.venv/bin/uvicorn app.main:app --reload --env-file .env
 ```
 -
 

@@ -1,0 +1,42 @@
+<script>
+  (function () {
+    var form = document.getElementById({{ form_id | tojson }});
+    var notice = document.getElementById("auth-notice");
+    var submit = form.querySelector('button[type="submit"]');
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      notice.textContent = "";
+      submit.disabled = true;
+
+      fetch({{ auth_endpoint | tojson }}, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: form.elements.username.value,
+          password: form.elements.password.value
+        })
+      })
+        .then(function (response) {
+          return response.json()
+            .catch(function () { return {}; })
+            .then(function (data) {
+              return { ok: response.ok, data: data };
+            });
+        })
+        .then(function (result) {
+          if (result.ok) {
+            window.location.href = {{ auth_success_path | tojson }};
+            return;
+          }
+          notice.textContent = result.data.message || "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.";
+        })
+        .catch(function () {
+          notice.textContent = "연결하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.";
+        })
+        .finally(function () {
+          submit.disabled = false;
+        });
+    });
+  })();
+</script>

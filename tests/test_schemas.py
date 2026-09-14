@@ -3,13 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import (
-    MESSAGE_MAX_LENGTH,
-    ChatRequest,
-    ErrorCode,
-    ErrorResponse,
-    RegisterRequest,
-)
+from app.schemas import ChatRequest, ErrorCode, ErrorResponse, RegisterRequest
 
 
 @pytest.mark.parametrize("blank", ["", " ", "   ", "\t", "\n", " \t\n "])
@@ -18,10 +12,11 @@ def test_공백만_입력은_거부한다(blank):
         ChatRequest(message=blank)
 
 
-def test_길이_상한을_넘으면_거부한다():
-    ChatRequest(message="가" * MESSAGE_MAX_LENGTH)
-    with pytest.raises(ValidationError):
-        ChatRequest(message="가" * (MESSAGE_MAX_LENGTH + 1))
+def test_길이_상한이_없다():
+    # 명세는 "검증 로직 최소 1개"만 요구한다. 빈 입력·공백만 차단 2겹으로 충분하고,
+    # 코딩 학습 챗봇이라 긴 코드 붙여넣기를 근거 없는 숫자로 막지 않는다.
+    long_code = "가" * 100_000
+    assert ChatRequest(message=long_code).message == long_code
 
 
 def test_원본을_그대로_보존한다():
