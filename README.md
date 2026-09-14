@@ -265,10 +265,60 @@ python -m pytest -q
 
 ## 9. 팀 역할 및 개인별 작업 요약
 
-<!-- 담당 A — 매주 금요일 갱신, Git 이력과 일치시킬 것 (평가항목 6·31) -->
-> 작성 예정
+<!-- 담당 A 정리 — 각자 자기 항목을 쓴다. Git 이력과 일치시킬 것 (평가항목 6·31).
+     파일 소유는 AGENTS.md §2 가 기준이고, 아래 "담당 파일"은 거기서 옮겨 적은 것이다. -->
+
+역할 분담은 **계층별**이다. 한 사람이 한 층을 끝까지 맡고, 층 사이 경계는 `schemas.py`·`deps.py`·`crud.py`
+세 계약으로만 만난다 (§3). 누가 어떤 파일을 만졌는지는 `git log --format='%an' -- <파일>` 로 확인할 수 있다.
+
+### A — 인증 (`yun-lim`)
+
+- 담당 파일: `app/deps.py` `app/security.py` `app/routers/auth.py` `app/models.py`(User) `templates/login·register·_auth_submit`
+- 작업 요약: _(A 작성)_
+
+### B — 챗봇·AI (`sonjehyun123-maker`)
+
+- 담당 파일: `app/services/ai_client.py` `app/services/chat_service.py` `app/routers/chat.py`
+- 작업 요약: _(B 작성)_
+
+### C — DB·로그 (`00skgun`)
+
+- 담당 파일: `app/database.py` `app/crud.py` `app/models.py`(ChatLog) `app/routers/logs.py` `scripts/check_logs.sql` `scripts/create_tables.py` `docs/ERD.md`
+- 작업 요약: _(C 작성)_
+
+### D — 앱 골격 · 화면 · 인프라 (`zxcv718`)
+
+- 담당 파일: `app/main.py` `config.py` `schemas.py` `logging_config.py` · `routers/pages.py` `templates/base·chat·logs` `static/` · `.github/` `vercel.json` `scripts/vercel-env-push.sh`
+- 작업 요약 (커밋 68 · 이슈 번호는 PR 과 1:1):
+  - **앱 골격** — FastAPI 진입점, 요청/응답/오류 스키마와 `AppError`, 전역 예외 핸들러로 오류 응답 형식 통일 (#1 #24 #46), `request_id` 미들웨어와 로깅 설정 (#37)
+  - **화면** — 디자인 토큰·템플릿·`chat.js` (#1), 화면 라우터 `pages.py` (#51 #75), 인증 연결과 로그아웃 (#68), `/logs` 데이터 연결과 KST 표시 (#91 #99), `/api/chat` 라우터 등록 (#94)
+  - **인프라·CI** — Vercel 단일 함수 배포와 스테이징/프로덕션 분리, `autopr → ci → automerge → close-issue → deploy` 자동화 (#1 #26 #31 #61), 환경변수 등록 스크립트 (#57 #63), CI 더미 `DATABASE_URL` (#78), Neon 두 브랜치 테이블 생성·검증 (#89)
+  - **문서·규칙** — README 골격과 §2~§5 (#1 #55 #82), archify 아키텍처와 요청 시퀀스 (#96), `AGENTS.md`·`CONTRIBUTING`·이슈/PR 템플릿 (#28 #41 #53 #80)
 
 ## 10. 트러블슈팅
 
-<!-- 전원 — 막혔던 것과 해결 방법 -->
-> 작성 예정
+<!-- 전원 — 막혔던 것과 해결 방법. 아래 4건은 D 가 겪은 것, 각자 겪은 것을 이어서 추가한다. -->
+
+### 배포는 초록불인데 화면이 404 — Vercel 의 작업 디렉터리 (#51)
+
+- **증상**: 로컬에선 되는 템플릿 렌더링이 Vercel 에서만 `TemplateNotFound`.
+- **원인**: Vercel 함수의 cwd 는 파일이 있는 `app/` 이 아니라 프로젝트 루트 `/var/task`. 상대경로 `templates/` 가 `/var/task/templates` 를 찾았다.
+- **해결**: `config.py` 에 `BASE_DIR = Path(__file__).resolve().parent` 기준 절대경로 상수를 두고 전부 그걸 쓴다. `tests/test_pages.py` 가 `os.chdir` 로 이 회귀를 잡는다.
+
+### `database.py` 하나가 CI 전체를 죽임 — import 시점의 환경변수 (#78)
+
+- **증상**: `database.py` 를 import 하는 PR 부터 CI 스모크 테스트가 `RuntimeError: DATABASE_URL environment variable is required` 로 실패.
+- **원인**: `database.py` 는 의도적으로 import 시점에 `DATABASE_URL` 을 읽는다(없으면 즉시 실패 = fail-fast). CI·테스트 환경엔 그 변수가 없었다.
+- **해결**: 설계를 바꾸지 않고 `ci.yml` job env 와 `tests/conftest.py` 의 `setdefault` 로 더미 값을 준다. 첫 호출 때 읽는 모듈(`ai_client.py` `security.py`)은 그것도 필요 없다.
+
+### 자동 PR 이 만들어져도 CI 가 안 돔 — `GITHUB_TOKEN` 의 한계 (#1 #26)
+
+- **증상**: `autopr` 워크플로가 PR 을 만들었는데 `ci` 워크플로가 트리거되지 않음.
+- **원인**: `GITHUB_TOKEN` 으로 만든 이벤트는 다른 워크플로를 깨우지 않는다(무한 루프 방지 정책).
+- **해결**: PR 생성·머지 단계만 개인 PAT(`GH_PAT`)을 쓴다. 그래서 PR author 가 전부 D 로 찍히고, 실제 작업자는 PR 본문의 "작업자" 줄(커밋 author)로 본다 (#61).
+
+### 모든 불이 초록인데 가입이 500 — 테이블이 없는 DB (#89)
+
+- **증상**: 배포 성공·헬스체크 200·DB 연결 성공. 그런데 `/api/auth/register` 가 500.
+- **원인**: `create_engine` 은 연결만 확인하고 테이블 존재는 첫 쿼리에서야 드러난다. Neon 두 브랜치(development·production) 모두 `users`·`chat_logs` 가 없었다. 앱은 서버리스라 시작 훅에서 `create_all()` 을 돌리지 않는다.
+- **해결**: `scripts/create_tables.py` 를 각 브랜치에 1회 실행(연결 문자열은 D 만 가짐). 끝에서 끝까지 실제 요청을 한 번 흘려보는 것만이 이런 "초록불 함정"을 잡는다 — 그래서 §8 의 확인 절차가 있다.
