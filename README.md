@@ -35,15 +35,50 @@ DB 제공자는 **Neon Free**로 확정하고 두 브랜치의 pooled 연결 문
 
 ## 3. 시스템 구조
 
+![런타임 아키텍처](docs/architecture/architecture.png)
+
+> 위 그림은 [archify](https://github.com/tt-a1i/archify) 로 코드에서 그린 것이다. 원본 명세는
+> [`docs/architecture/architecture.archify.json`](docs/architecture/architecture.archify.json),
+> 상호작용 버전(경로 추적·검색·PNG/SVG 내보내기)은 [`docs/architecture/architecture.html`](docs/architecture/architecture.html) 을
+> 브라우저로 열면 된다. 구조가 바뀌면 JSON 을 고치고 `archify deliver` 로 다시 뽑는다.
+
+앱 전체가 **Vercel 서버리스 함수 하나**다. 브라우저의 요청은 `main.py` 의 request_id 미들웨어를 지나
+라우터로 가고, 인증(`deps.py`)·쿼리(`crud.py`)·AI 호출(`ai_client.py`)은 각각 한 곳에서만 일어난다.
+DB(Neon PostgreSQL)와 AI API 는 함수 밖에 있다.
+
+### 질문 한 번의 흐름 — `POST /api/chat`
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 브라우저 (chat.js)
+    participant M as main.py
+    participant R as routers/chat.py
+    participant D as deps.py
+    participant S as chat_service.py
+    participant C as crud.py
+    participant AI as ai_client.py → 코디세이 AI
+    participant DB as Neon PostgreSQL
+
+    B->>M: POST /api/chat {message}
+    M->>M: request_id 발급 · request_received 로그
+    M->>R: 라우팅
+    R->>D: CurrentUser (HttpOnly 쿠키 JWT 검증)
+    D->>C: get_user_by_id
+    C->>DB: SELECT users
+    R->>S: handle_chat(db, user.id, message)
+    S->>C: recent_turns(user_id, n=5)
+    C->>DB: SELECT chat_logs (최근 성공 5개)
+    S->>AI: generate(messages) · ai_call_start
+    AI-->>S: answer (또는 AppError) · ai_call_success|failed
+    S->>C: create_chat_log(성공/실패 모두)
+    C->>DB: INSERT chat_logs · db_save_success
+    S-->>R: ChatResponse{answer, chat_id}
+    R-->>B: 200 JSON (오류는 {error_code, message})
 ```
-브라우저 ──HTTPS──▶ Vercel Edge/CDN ──▶ Vercel Function (FastAPI 앱 전체가 단일 함수)
-                                          │
-                                routers/ ─┼─ services/ ─── crud.py
-                                          │       │            │
-                                          │       ▼            ▼
-                                          │   AI API      관리형 PostgreSQL
-                                          │  (서버에서만 호출)  (외부 · 영속)
-```
+
+서버 로그 4줄(`request_received` → `ai_call_start` → `ai_call_success|failed` → `db_save_success|failed`)과
+`chat_logs.request_id` 가 같은 값을 써서, 요청 하나를 로그와 DB 양쪽에서 추적할 수 있다.
 
 | 계층 | 책임 | 해서는 안 되는 것 |
 |---|---|---|

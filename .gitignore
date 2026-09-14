@@ -20,3 +20,6 @@ logs/
 # 나중에 pyproject.toml 을 직접 쓰기로 하면 이 두 줄을 지울 것.
 pyproject.toml
 uv.lock
+
+# graphify 산출물 (로컬 분석용)
+graphify-out/
