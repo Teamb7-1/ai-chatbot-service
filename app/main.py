@@ -19,7 +19,7 @@ from app.logging_config import (
     reset_request_id,
     set_request_id,
 )
-from app.routers import auth, logs, pages
+from app.routers import auth, chat, logs, pages
 from app.schemas import ERROR_MESSAGES, ERROR_STATUS, AppError, ErrorCode
 
 # 서버리스는 요청마다 기동될 수 있어 시작 훅이 아니라 import 시점에 설정한다.
@@ -57,6 +57,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(pages.router)
 app.include_router(auth.router)  # /api/auth/* · /api/me  (A, #67)
 app.include_router(logs.router)  # /api/me/chats  (C, #36)
+app.include_router(chat.router)  # /api/chat  (B, #49)
 
 
 @app.get("/healthz")
