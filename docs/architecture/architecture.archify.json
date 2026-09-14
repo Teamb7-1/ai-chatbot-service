@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "B7-1 코딩 학습 Q&A 챗봇 — 런타임 아키텍처",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1120,
+      640
+    ],
+    "views": [
+      {
+        "id": "chat-path",
+        "label": "질문 한 번의 경로",
+        "focus": [
+          "browser",
+          "main",
+          "routers",
+          "chat-service",
+          "ai-client",
+          "ai-api",
+          "crud",
+          "neon"
+        ],
+        "note": "POST /api/chat 하나가 지나가는 길. 인증 → 문맥 조회 → AI 호출 → 저장 → 응답."
+      },
+      {
+        "id": "contracts",
+        "label": "한 곳에서만 — 계약 3종",
+        "focus": [
+          "routers",
+          "deps",
+          "crud",
+          "chat-service"
+        ],
+        "note": "인증은 deps.py, 쿼리는 crud.py, 요청·응답·오류 형식은 schemas.py 한 곳에서만 정한다."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "브라우저",
+      "sublabel": "Jinja2 템플릿 + chat.js",
+      "pos": [
+        30,
+        110
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "main",
+      "type": "backend",
+      "label": "main.py",
+      "sublabel": "request_id 미들웨어 · 오류 핸들러",
+      "pos": [
+        240,
+        110
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "routers",
+      "type": "backend",
+      "label": "routers/",
+      "sublabel": "pages · auth · chat · logs",
+      "pos": [
+        460,
+        110
+      ],
+      "size": [
+        150,
+        70
+      ]
+    },
+    {
+      "id": "chat-service",
+      "type": "backend",
+      "label": "chat_service.py",
+      "sublabel": "문맥 조회 → AI 호출 → 저장",
+      "pos": [
+        680,
+        110
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "ai-client",
+      "type": "backend",
+      "label": "ai_client.py",
+      "sublabel": "OpenAI 호환 · 타임아웃",
+      "pos": [
+        920,
+        110
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "ai-api",
+      "type": "external",
+      "label": "코디세이 AI API",
+      "sublabel": "copa.codyssey.kr",
+      "pos": [
+        920,
+        300
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "deps",
+      "type": "security",
+      "label": "deps.py",
+      "sublabel": "CurrentUser · DbSession",
+      "pos": [
+        460,
+        300
+      ],
+      "size": [
+        150,
+        70
+      ]
+    },
+    {
+      "id": "crud",
+      "type": "backend",
+      "label": "crud.py",
+      "sublabel": "모든 SQL 은 여기서만",
+      "pos": [
+        680,
+        300
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "neon",
+      "type": "database",
+      "label": "Neon PostgreSQL",
+      "sublabel": "users · chat_logs",
+      "brand": "postgresql",
+      "pos": [
+        680,
+        490
+      ],
+      "size": [
+        160,
+        70
+      ]
+    },
+    {
+      "id": "github",
+      "type": "external",
+      "label": "GitHub Actions",
+      "sublabel": "PR → CI → merge → deploy",
+      "brand": "github",
+      "pos": [
+        240,
+        300
+      ],
+      "size": [
+        160,
+        70
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-main",
+      "from": "browser",
+      "to": "main",
+      "label": "HTTPS · JSON",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "main-routers",
+      "from": "main",
+      "to": "routers",
+      "label": "라우팅",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "routers-service",
+      "from": "routers",
+      "to": "chat-service",
+      "label": "POST /api/chat",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "service-client",
+      "from": "chat-service",
+      "to": "ai-client",
+      "label": "messages",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "client-api",
+      "from": "ai-client",
+      "to": "ai-api",
+      "label": "HTTP",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "routers-deps",
+      "from": "routers",
+      "to": "deps",
+      "label": "쿠키 검증",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "deps-crud",
+      "from": "deps",
+      "to": "crud",
+      "label": "get_user_by_id",
+      "labelDy": -28
+    },
+    {
+      "id": "service-crud",
+      "from": "chat-service",
+      "to": "crud",
+      "label": "recent_turns · create_chat_log",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "crud-neon",
+      "from": "crud",
+      "to": "neon",
+      "label": "SQLAlchemy",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "github-main",
+      "from": "github",
+      "to": "main",
+      "label": "Vercel 배포",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "질문 한 번의 흐름",
+      "items": [
+        "쿠키 → CurrentUser → 최근 5턴 조회 → AI → 성공·실패 모두 저장",
+        "request_id 하나가 로그 4줄과 chat_logs 행을 묶는다"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Vercel 서버리스 전제",
+      "items": [
+        "앱 전체가 함수 하나 · 파일 쓰기 없음 · 저장은 Neon 만",
+        "환경변수 4개: SECRET_KEY · DATABASE_URL · AI_API_KEY · AI_TIMEOUT_SECONDS"
+      ]
+    }
+  ]
+}
