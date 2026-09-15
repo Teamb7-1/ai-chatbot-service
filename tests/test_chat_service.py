@@ -22,7 +22,7 @@ def db():
     return MagicMock()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_handle_chat_success_saves_and_returns_answer(db):
     """정상 응답이면 status=success로 저장하고 ChatResponse를 반환한다."""
     with (
@@ -47,7 +47,7 @@ async def test_handle_chat_success_saves_and_returns_answer(db):
         assert kwargs["answer"] == "AI 답변"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_handle_chat_ai_failure_saves_error_and_reraises(db):
     """AI 호출이 실패하면 status=error로 저장하고 AppError를 다시 던진다."""
     with (
@@ -72,7 +72,7 @@ async def test_handle_chat_ai_failure_saves_error_and_reraises(db):
         assert kwargs["answer"] == ""
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_handle_chat_db_save_failure_does_not_hide_original_error(db):
     """로그 저장 자체가 실패해도 원래 AppError는 그대로 올라간다."""
     with (
